@@ -1,0 +1,61 @@
+{
+    "name": "@mattiamarchesini/touch-ts",
+    "version": "1.0.1",
+    "description": "Super light TypeScript library for handling touch events and gestures in web applications, focussed on industrial HDMI displays.",
+    "license": "MIT",
+    "author": "Mattia Marchesini <info@mattiamarchesini.com>",
+    "type": "module",
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.mjs",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.mjs",
+        "require": "./dist/index.cjs",
+        "default": "./dist/index.mjs"
+      },
+      "./types": {
+        "types": "./dist/types/index.d.ts",
+        "import": "./dist/types/index.mjs",
+        "require": "./dist/types/index.cjs"
+      },
+      "./models": {
+        "types": "./dist/models/index.d.ts",
+        "import": "./dist/models/index.mjs",
+        "require": "./dist/models/index.cjs"
+      }
+    },
+    "sideEffects": false,
+    "files": [
+      "dist"
+    ],
+    "publishConfig": {
+      "access": "public"
+    },
+    "scripts": {
+      "build": "tsup",
+      "clean": "rimraf dist",
+      "typecheck": "tsc -p tsconfig.json --noEmit",
+      "lint": "eslint .",
+      "test": "vitest run --coverage",
+      "dev": "tsup --watch",
+      "prepare": "npm run clean & npm run build",
+      "demo": "npx http-server . -p 5173"
+    },
+    "devDependencies": {
+      "@types/node": "^20.11.0",
+      "@typescript-eslint/eslint-plugin": "^8.0.0",
+      "@typescript-eslint/parser": "^8.0.0",
+      "eslint": "^9.39.1",
+      "eslint-config-prettier": "^9.1.0",
+      "prettier": "^3.2.0",
+      "rimraf": "^6.0.0",
+      "tsup": "^8.0.0",
+      "typescript": "^5.9.3",
+      "vitest": "^2.0.0"
+    },
+    "engines": {
+      "node": "^23.7.0"
+    }
+  }
