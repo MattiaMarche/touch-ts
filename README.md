@@ -24,8 +24,41 @@ Create a new instance:
 ```ts
 import { TouchScreen } from '@mattiamarchesini/touch-ts';
 
+/**
+ * @description Creates a new instance of the class handling touch events on the screen.
+ * @param {string} attribute
+ * @param {TouchTypes} type
+ * @param {TouchTypes} continuous
+ * @param {number} minimum
+ * @param {number} sensibility
+ * @param {number} iterationLimit
+ * @param {boolean} isTouch
+ * @return {TouchScreen} New instance of this class.
+ */
 const touchScreen = new TouchScreen();
 ```
+
+Where parameters are, in order:
+
+- `attribute`: Name of the attribute used to detect if an element is scrollable (true) or not (false).
+  IMPORTANT: if null this feature will be replaced by a more complex detection based on the element's scrollability, but this will impact performances negatively.
+  If undefined, 'tss' will be used.
+  Remember: if an attribute is specified, it must be added to all elements that should be handled by this class.
+  Default: 'tss'.
+- `type`: Scrolling type, defines if should handle vertical, horizontal or both scrolls.
+  Default: `TouchTypes.BOTH`.
+- `continuous`: Defines if elements should continue scrolling after the user stops interacting with the screen when the movement had enough speed (true), or not (false).
+  Default: true.
+- `minimum`: Minimum amount of pixels that should be scrolled to consider a movement continuos (moving after scroll have scroll ends).
+  Default: 25.
+- `sensibility`: Sensibility of the touch movements, higher values means greater movements.
+  IMPORTANT: if this parameter is differet from 1 the page will not follow the finger/mouse exactly, but the movements will be amplified (or reduced) accordingly.
+  Default: 1.
+- `iterationLimit`: Limits the number of iterations to find a scrollable element when a touch start or mouse down event is triggered.
+  Default: 50.
+- `isTouch`: Defines if should handle touch events (true) or click events (false).
+  If not defined will be detected from browser's data.
+  Default: detected from browser's data.
 
 ## Technical details
 

@@ -1,6 +1,6 @@
 {
     "name": "@mattiamarchesini/touch-ts",
-    "version": "1.0.1",
+    "version": "1.1.1",
     "description": "Super light TypeScript library for handling touch events and gestures in web applications, focussed on industrial HDMI displays.",
     "license": "MIT",
     "author": "Mattia Marchesini <info@mattiamarchesini.com>",

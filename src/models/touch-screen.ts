@@ -10,11 +10,6 @@ export class TouchScreen {
      * STATIC VARIABLES
      */
     /**
-     * @description {number} Minimum amount of pixels that should be scrolled to consider a movement as
-     * relevant.
-     */
-    private static MOVEMENT_MINIMUM: number = 25;
-    /**
      * @description {number} Basic steps taken by a smooth movement to complete itself, modified by the
      * delta time calculated for each movement in this way: delta.time * TouchScreen.MOVEMENT_STEPS.
      */
@@ -41,7 +36,7 @@ export class TouchScreen {
     /**
      * @description {string} Name of the attribute used to detect if an element is scrollable (true)
      * or not (false).
-     * Default: 'xts'.
+     * Default: 'tss'.
      */
     private attribute: string;
     /**
@@ -96,6 +91,19 @@ export class TouchScreen {
      */
     private lastY: number = 0;
     /**
+     * @description {number} Minimum amount of pixels that should be scrolled to consider a movement as
+     * continuos (moving after scroll have scroll ends).
+     */
+    private minimum: number = 25;
+    /**
+     * @description {number} Sensibility of the touch movements, higher values
+     * means greater movements.
+     * IMPORTANT: if this parameter is differet from 1 the page will not follow the finger/mouse
+     * exactly, but the movements will be amplified (or reduced) accordingly.
+     * Default: 1.
+     */
+    private sensibility: number = 1;
+    /**
      * @description {boolean} Additional flag to detect if the user is currently scrolling.
      * Default: false.
      */
@@ -131,15 +139,27 @@ export class TouchScreen {
     /**
      * @XAB {namespace: XTS, type: context, name: TouchScreen}
      * @description Creates a new instance of the class handling touch events on the screen.
+     * @param {string} attribute (Optional) Name of the attribute used to detect if an element is
+     * scrollable (true) or not (false).
+     * IMPORTANT: if null this feature will be replaced by a more complex detection based on the
+     * element's scrollability, but this will impact performances negatively.
+     * If undefined, 'tss' will be used.
+     * Remember: if an attribute is specified, it must be added to all elements that should be handled by this class.
+     * Default: 'tss'.
      * @param {TouchTypes} type (Optional) Scrolling type, defines if should handle vertical, horizontal
      * or both scrolls.
      * Default: TouchTypes.BOTH.
      * @param {TouchTypes} continuous (Optional) Defines if elements should continue scrolling after the
      * user stops interacting with the screen when the movement had enough speed (true), or not (false).
      * Default: true.
-     * @param {string} attribute (Optional) Name of the attribute used to detect if an element is
-     * scrollable (true) or not (false).
-     * Default: 'xts'.
+     * @param {number} minimum (Optional) Minimum amount of pixels that should be scrolled to consider
+     * a movement continuos (moving after scroll have scroll ends).
+     * Default: 25.
+     * @param {number} sensibility (Optional) Sensibility of the touch movements, higher values
+     * means greater movements.
+     * IMPORTANT: if this parameter is differet from 1 the page will not follow the finger/mouse
+     * exactly, but the movements will be amplified (or reduced) accordingly.
+     * Default: 1.
      * @param {number} iterationLimit (Optional) Limits the number of iterations to find a scrollable
      * element when a touch start or mouse down event is triggered.
      * Default: 50.
@@ -147,7 +167,7 @@ export class TouchScreen {
      * If not defined will be detected from browser's data.
      * @return {TouchScreen} New instance of this class.
      */
-    constructor ( type?: TouchTypes, continuous?: boolean, attribute?: string, iterationLimit?: number, isTouch?: boolean ) {
+    constructor ( attribute?: string, type?: TouchTypes, continuous?: boolean, minimum?: number, sensibility?: number, iterationLimit?: number, isTouch?: boolean ) {
         if ( typeof continuous === 'undefined' ) {
             this.continuous = true;
         } else {
@@ -161,25 +181,47 @@ export class TouchScreen {
         switch ( this.type ) {
             case TouchTypes.HORIZONTAL:
                 this.scrollBy = ( x: number, y: number ) => {
-                    // Ignore next TS check since this method will be called only when an element is set.
-                    // @ts-ignore
-                    this.element.scrollLeft += x;
+                    // This method can be called only when an element is set.
+                    ( this.element as HTMLElement ).scrollLeft += this.getDelta( x );
                 };
                 break;
             case TouchTypes.VERTICAL:
                 this.scrollBy = ( x: number, y: number ) => {
-                    // Ignore next TS check since this method will be called only when an element is set.
-                    // @ts-ignore
-                    this.element.scrollTop += y;
+                    // This method can be called only when an element is set.
+                    ( this.element as HTMLElement ).scrollTop += this.getDelta( y );
                 };
                 break;
             default:
                 break;
         }
         if ( typeof attribute === 'undefined' ) {
-            this.attribute = 'xts';
+            this.attribute = 'tss';
         } else {
-            this.attribute = attribute;
+            if ( attribute === null ) {
+                console.warn( '[TouchScreen] Warning: attribute set to null, using scrollability detection which could impact performances.' );
+                this.isScrollable = ( element: HTMLElement ): boolean => {
+                    const scrollability = this.getScrollability( element );
+                    if ( this.type === TouchTypes.BOTH ) {
+                        return scrollability.x || scrollability.y;
+                    }
+                    if ( this.type === TouchTypes.HORIZONTAL ) {
+                        return scrollability.x;
+                    }
+                    return scrollability.y;
+                }
+                this.attribute = '';
+            } else {
+                this.attribute = attribute;
+            }
+        }
+        if ( typeof minimum !== 'undefined' ) {
+            this.minimum = minimum;
+        }
+        if ( typeof sensibility !== 'undefined' ) {
+            this.sensibility = sensibility;
+            if ( this.sensibility !== 1 ) {
+                this.getDelta = ( value: number ): number => value * this.sensibility;
+            }
         }
         if ( typeof iterationLimit === 'undefined' ) {
             this.iterationLimit = 50;
@@ -231,6 +273,16 @@ export class TouchScreen {
     }
 
     /**
+     * @description (Overwritable) Applies the sensibility factor to the given value.
+     * Should be overwritten in the constructor if a sensibility different from 1 is set.
+     * @param {number} value Value to apply the sensibility factor to.
+     * @return {number} Value modified by the sensibility factor.
+     */
+    private getDelta( value: number ): number {
+        return value;
+    }
+
+    /**
      * @description (Overwritable) Gets the X coordinate of the mouse or touch event.
      * Should be overwritten in the constructor to assing the correct method accordingly
      * to the handler type (handling touches or clicks).
@@ -254,7 +306,7 @@ export class TouchScreen {
 
     private onEnd( event: Event ) {
         this.removeMoveEvent();
-        if ( this.totalDelta < TouchScreen.MOVEMENT_MINIMUM ) {
+        if ( this.totalDelta < this.minimum ) {
             this.element = null;
             this.scrolling = false;
             return;
@@ -303,7 +355,7 @@ export class TouchScreen {
         this.lastX = coordinates.x;
         this.lastY = coordinates.y;
         this.totalDelta += Math.abs( delta.x ) + Math.abs( delta.y );
-        if ( this.totalDelta > TouchScreen.MOVEMENT_MINIMUM ) {
+        if ( this.totalDelta > this.minimum ) {
             this.scrolling = true;
             if ( this.continuous ) {
                 if ( ( event.timeStamp - this.lastStart ) > TouchScreen.ZERO_THRESHOLD ) {
@@ -311,8 +363,8 @@ export class TouchScreen {
                     this.lastDeltaY = 0;
                     this.lastStart = event.timeStamp;
                 } else {
-                    this.lastDeltaX += delta.x;
-                    this.lastDeltaY += delta.y;
+                    this.lastDeltaX += this.getDelta( delta.x );
+                    this.lastDeltaY += this.getDelta( delta.y );
                 }
             }
         }
@@ -358,9 +410,9 @@ export class TouchScreen {
     private scrollBy( x: number, y: number ) {
         // Ignore next two TS checks since this method will be called only when an element is set.
         // @ts-ignore
-        this.element.scrollLeft += x;
+        this.element.scrollLeft += this.getDelta( x );
         // @ts-ignore
-        this.element.scrollTop += y;
+        this.element.scrollTop += this.getDelta( y );
     }
 
     private setCoordinates( event: Event ) {
@@ -444,6 +496,26 @@ export class TouchScreen {
             x: this.getX( event as MouseEvent | TouchEvent ),
             y: this.getY( event as MouseEvent | TouchEvent )
         };
+    }
+
+    /**
+     * @XAB {namespace: XTS, context: TouchScreen, type: method, name: getScrollability}
+     * @description Returns the scrollability of the specified element in both axis.
+     * @param {Element} element Element to check.
+     * @return {{ x: boolean; y: boolean; }} Object containing the scrollability in both axis.
+     */
+    public getScrollability ( element: Element ): { x: boolean; y: boolean; } {
+        if ( !( element instanceof HTMLElement ) ) {
+          return { x: false, y: false };
+        }
+        const cs = getComputedStyle( element );
+        const overflowXAllows: boolean =
+          cs.overflowX === "auto" || cs.overflowX === "scroll" || cs.overflowX === "overlay";
+        const overflowYAllows: boolean =
+          cs.overflowY === "auto" || cs.overflowY === "scroll" || cs.overflowY === "overlay";
+        const x = overflowXAllows && element.scrollWidth > element.clientWidth + 1;
+        const y = overflowYAllows && element.scrollHeight > element.clientHeight + 1;
+        return { x, y };
     }
 
     /**
