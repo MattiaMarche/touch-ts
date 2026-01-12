@@ -139,11 +139,13 @@ export class TouchScreen {
     /**
      * @XAB {namespace: XTS, type: context, name: TouchScreen}
      * @description Creates a new instance of the class handling touch events on the screen.
-     * @param {string} attribute (Optional) Name of the attribute used to detect if an element is
+     * @param {string | null} attribute (Optional) Name of the attribute used to detect if an element is
      * scrollable (true) or not (false).
      * IMPORTANT: if null this feature will be replaced by a more complex detection based on the
      * element's scrollability, but this will impact performances negatively.
      * If undefined, 'tss' will be used.
+     * If starts with "." or "#" it will be considered as a class or id selector respectively,
+     * and the attribute name will be extracted from it.
      * Remember: if an attribute is specified, it must be added to all elements that should be handled by this class.
      * Default: 'tss'.
      * @param {TouchTypes} type (Optional) Scrolling type, defines if should handle vertical, horizontal
@@ -167,7 +169,7 @@ export class TouchScreen {
      * If not defined will be detected from browser's data.
      * @return {TouchScreen} New instance of this class.
      */
-    constructor ( attribute?: string, type?: TouchTypes, continuous?: boolean, minimum?: number, sensibility?: number, iterationLimit?: number, isTouch?: boolean ) {
+    constructor ( attribute?: string | null, type?: TouchTypes, continuous?: boolean, minimum?: number, sensibility?: number, iterationLimit?: number, isTouch?: boolean ) {
         if ( typeof continuous === 'undefined' ) {
             this.continuous = true;
         } else {
@@ -210,6 +212,16 @@ export class TouchScreen {
                     return scrollability.y;
                 }
                 this.attribute = '';
+            } else if ( attribute.startsWith( '.' ) ) {
+                this.attribute = attribute.substring( 1 );
+                this.isScrollable = ( element: HTMLElement ): boolean => {
+                    return element.classList.contains( this.attribute );
+                };
+            } else if ( attribute.startsWith( '#' ) ) {
+                this.attribute = attribute.substring( 1 );
+                this.isScrollable = ( element: HTMLElement ): boolean => {
+                    return element.id === this.attribute;
+                };
             } else {
                 this.attribute = attribute;
             }

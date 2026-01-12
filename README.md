@@ -26,7 +26,7 @@ import { TouchScreen } from '@mattiamarchesini/touch-ts';
 
 /**
  * @description Creates a new instance of the class handling touch events on the screen.
- * @param {string} attribute
+ * @param {string | null} attribute
  * @param {TouchTypes} type
  * @param {TouchTypes} continuous
  * @param {number} minimum
@@ -43,6 +43,7 @@ Where parameters are, in order:
 - `attribute`: Name of the attribute used to detect if an element is scrollable (true) or not (false).
   IMPORTANT: if null this feature will be replaced by a more complex detection based on the element's scrollability, but this will impact performances negatively.
   If undefined, 'tss' will be used.
+  You can also use a class or id selector by starting the string with "." or "#" respectively.
   Remember: if an attribute is specified, it must be added to all elements that should be handled by this class.
   Default: 'tss'.
 - `type`: Scrolling type, defines if should handle vertical, horizontal or both scrolls.
