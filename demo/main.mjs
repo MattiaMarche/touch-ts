@@ -3,5 +3,12 @@
  */
 import { TouchScreen } from '../dist/index.mjs';
 
+// For each box add a click event
+document.querySelectorAll( '.box' ).forEach( ( box ) => {
+    box.addEventListener( 'click', () => {
+        console.log( '[Box] Info: you clicked box:', box );
+    });
+});
 
-const touchScreen = new TouchScreen();
+// Create a new TouchScreen instance
+const touchScreen = new TouchScreen( undefined, undefined, true );

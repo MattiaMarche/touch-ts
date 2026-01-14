@@ -28,6 +28,7 @@ import { TouchScreen } from '@mattiamarchesini/touch-ts';
  * @description Creates a new instance of the class handling touch events on the screen.
  * @param {string | null} attribute
  * @param {TouchTypes} type
+ * @param {boolean} preventEvents
  * @param {TouchTypes} continuous
  * @param {number} minimum
  * @param {number} sensibility
@@ -48,6 +49,10 @@ Where parameters are, in order:
   Default: 'tss'.
 - `type`: Scrolling type, defines if should handle vertical, horizontal or both scrolls.
   Default: `TouchTypes.BOTH`.
+- `preventEvents`: (Optional) Defines if pointer events should be prevented during the scroll.
+  If true all events will be prevented.
+  Used to prevent a click/touchend event to trigger and perform operations when the scroll ends over a reactive item.
+  Default: false.
 - `continuous`: Defines if elements should continue scrolling after the user stops interacting with the screen when the movement had enough speed (true), or not (false).
   Default: true.
 - `minimum`: Minimum amount of pixels that should be scrolled to consider a movement continuos (moving after scroll have scroll ends).

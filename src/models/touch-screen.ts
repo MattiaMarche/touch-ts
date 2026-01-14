@@ -96,6 +96,14 @@ export class TouchScreen {
      */
     private minimum: number = 25;
     /**
+     * @description {boolean} Additional flag to define which type of events should be prevented
+     * during the scroll.
+     * If true all events will be prevented (used to prevent a click/touchend event to trigger and perform
+     * operations when the scroll ends over a reactive item).
+     * Default: false.
+     */
+    private preventEvents: boolean = false;
+    /**
      * @description {number} Sensibility of the touch movements, higher values
      * means greater movements.
      * IMPORTANT: if this parameter is differet from 1 the page will not follow the finger/mouse
@@ -151,6 +159,12 @@ export class TouchScreen {
      * @param {TouchTypes} type (Optional) Scrolling type, defines if should handle vertical, horizontal
      * or both scrolls.
      * Default: TouchTypes.BOTH.
+     * @param {boolean} preventEvents (Optional) Defines if pointer events should be prevented
+     * during the scroll.
+     * If true all events will be prevented.
+     * Used to prevent a click/touchend event to trigger and perform operations when the scroll ends
+     * over a reactive item.
+     * Default: false.
      * @param {TouchTypes} continuous (Optional) Defines if elements should continue scrolling after the
      * user stops interacting with the screen when the movement had enough speed (true), or not (false).
      * Default: true.
@@ -169,7 +183,7 @@ export class TouchScreen {
      * If not defined will be detected from browser's data.
      * @return {TouchScreen} New instance of this class.
      */
-    constructor ( attribute?: string | null, type?: TouchTypes, continuous?: boolean, minimum?: number, sensibility?: number, iterationLimit?: number, isTouch?: boolean ) {
+    constructor ( attribute?: string | null, type?: TouchTypes, preventEvents?: boolean, continuous?: boolean, minimum?: number, sensibility?: number, iterationLimit?: number, isTouch?: boolean ) {
         if ( typeof continuous === 'undefined' ) {
             this.continuous = true;
         } else {
@@ -228,6 +242,9 @@ export class TouchScreen {
         }
         if ( typeof minimum !== 'undefined' ) {
             this.minimum = minimum;
+        }
+        if ( typeof preventEvents !== 'undefined' && preventEvents !== null ) {
+            this.preventEvents = preventEvents;
         }
         if ( typeof sensibility !== 'undefined' ) {
             this.sensibility = sensibility;
@@ -319,7 +336,10 @@ export class TouchScreen {
     private onEnd( event: Event ) {
         this.removeMoveEvent();
         if ( this.totalDelta < this.minimum ) {
-            this.element = null;
+            if ( this.element !== null ) {
+                this.element.style.pointerEvents = '';
+                this.element = null;
+            }
             this.scrolling = false;
             return;
         }
@@ -348,6 +368,7 @@ export class TouchScreen {
         this.scrolling = false;
         this.stopTimeout = setTimeout( () => {
             clearTimeout( this.stopTimeout );
+            this.preventOnEnd( event );
             this.element = null;
             this.scrolling = false;
         }, TouchScreen.STOP_DELAY );
@@ -368,6 +389,12 @@ export class TouchScreen {
         this.lastY = coordinates.y;
         this.totalDelta += Math.abs( delta.x ) + Math.abs( delta.y );
         if ( this.totalDelta > this.minimum ) {
+            if ( !this.scrolling && this.preventEvents ) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                event.stopPropagation();
+                this.element.style.pointerEvents = 'none';
+            }
             this.scrolling = true;
             if ( this.continuous ) {
                 if ( ( event.timeStamp - this.lastStart ) > TouchScreen.ZERO_THRESHOLD ) {
@@ -393,6 +420,21 @@ export class TouchScreen {
         }
         this.setCoordinates( event );
         this.addMoveEvent();
+    }
+
+    /**
+     * @description Prevents events from being triggered after the scroll ends.
+     * @param {Event} event Event to prevent.
+     */
+    private preventOnEnd( event: Event ) {
+      if ( !this.preventEvents ) {
+        return;
+      }
+      event.stopImmediatePropagation();
+      event.stopPropagation();
+      if ( this.element !== null ) {
+          this.element.style.pointerEvents = '';
+      }
     }
 
     private preventSelection() {
